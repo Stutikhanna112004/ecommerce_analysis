@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+import os
 
 # ---------------------------------------------------------
 # Page Config (First calling page config)
@@ -18,8 +19,8 @@ sns.set_style("whitegrid")
 # ---------------------------------------------------------
 # Data Load + Clean (Load Dataset)
 # ---------------------------------------------------------
-DATA_PATH = r"C:\Users\stuti\Downloads\ds learning\data.csv"
 
+DATA_PATH = os.path.join(os.path.dirname(__file__), "data.csv")
 
 @st.cache_data
 def load_data(path):
