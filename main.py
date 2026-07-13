@@ -11,20 +11,146 @@ import os
 st.set_page_config(
     page_title="Ecommerce Sales Dashboard",
     page_icon="🛒",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-sns.set_style("whitegrid")
+# ---------------------------------------------------------
+# Theme / Palette
+# ---------------------------------------------------------
+PRIMARY = "#6C5CE7"      # violet
+ACCENT = "#00CEC9"       # teal
+WARN = "#FDCB6E"         # amber
+BG_CARD = "#161A2B"
+TEXT_MUTED = "#9AA0B4"
+
+PALETTE = ["#6C5CE7", "#00CEC9", "#FD79A8", "#FDCB6E", "#74B9FF",
+           "#55EFC4", "#E17055", "#A29BFE", "#81ECEC", "#FAB1A0"]
+
+sns.set_theme(style="whitegrid")
+plt.rcParams.update({
+    "figure.facecolor": "none",
+    "axes.facecolor": "none",
+    "savefig.facecolor": "none",
+    "axes.edgecolor": "#3A3F55",
+    "axes.labelcolor": "#E4E6F0",
+    "xtick.color": "#B4B8C8",
+    "ytick.color": "#B4B8C8",
+    "text.color": "#E4E6F0",
+    "axes.grid": True,
+    "grid.color": "#2A2E42",
+    "grid.alpha": 0.5,
+    "font.family": "sans-serif",
+})
+
+# ---------------------------------------------------------
+# Custom CSS — cards, headers, fonts, sidebar polish
+# ---------------------------------------------------------
+st.markdown(f"""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+    html, body, [class*="css"] {{
+        font-family: 'Inter', sans-serif;
+    }}
+
+    /* Hide default streamlit chrome */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+
+    /* Page title */
+    .dash-title {{
+        font-family: 'Poppins', sans-serif;
+        font-size: 2.4rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, {PRIMARY}, {ACCENT});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0;
+    }}
+    .dash-subtitle {{
+        color: {TEXT_MUTED};
+        font-size: 1rem;
+        margin-top: 0.2rem;
+        margin-bottom: 1.5rem;
+    }}
+
+    /* KPI cards */
+    .kpi-card {{
+        background: linear-gradient(145deg, #1B2036, #14172A);
+        border: 1px solid #2A2E4A;
+        border-radius: 16px;
+        padding: 1.1rem 1.3rem;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+        transition: transform 0.15s ease;
+    }}
+    .kpi-card:hover {{
+        transform: translateY(-3px);
+        border-color: {PRIMARY};
+    }}
+    .kpi-label {{
+        color: {TEXT_MUTED};
+        font-size: 0.8rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.3rem;
+    }}
+    .kpi-value {{
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.7rem;
+        font-weight: 700;
+        color: #F4F5FA;
+    }}
+    .kpi-icon {{
+        font-size: 1.4rem;
+        margin-bottom: 0.4rem;
+    }}
+
+    /* Section headers */
+    .section-header {{
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #F4F5FA;
+        border-left: 4px solid {PRIMARY};
+        padding-left: 0.6rem;
+        margin: 1.6rem 0 0.8rem 0;
+    }}
+
+    /* Chart container card */
+    .chart-card {{
+        background: #12152A;
+        border: 1px solid #22263E;
+        border-radius: 14px;
+        padding: 1rem 1rem 0.4rem 1rem;
+    }}
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {{
+        background: #0D0F1C;
+        border-right: 1px solid #22263E;
+    }}
+    section[data-testid="stSidebar"] .stMarkdown h2 {{
+        font-family: 'Poppins', sans-serif;
+        color: {ACCENT};
+    }}
+
+    hr {{
+        border-color: #22263E !important;
+    }}
+</style>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # Data Load + Clean (Load Dataset)
 # ---------------------------------------------------------
-
 DATA_PATH = os.path.join(os.path.dirname(__file__), "data.csv")
+
 
 @st.cache_data
 def load_data(path):
-    df = pd.read_csv(path,encoding="latin1")
+    df = pd.read_csv(path, encoding="latin1")
     df = df.dropna(subset=["Description"])
 
     df["IsCancelled"] = df["InvoiceNo"].astype(str).str.startswith("C")
@@ -51,21 +177,27 @@ def load_data(path):
 df_clean = load_data(DATA_PATH)
 
 # ---------------------------------------------------------
-# Sidebar Filters 
+# Sidebar Filters
 # ---------------------------------------------------------
-st.sidebar.header("Filters")
+st.sidebar.markdown("## 🎛️ Filters")
+st.sidebar.markdown("Refine the dashboard view below.")
+st.sidebar.markdown("---")
 
 countries = sorted(df_clean["Country"].unique().tolist())
 selected_countries = st.sidebar.multiselect(
-    "Country Option", options=countries, default=countries
+    "🌍 Country", options=countries, default=countries
 )
 
 min_date = df_clean["InvoiceDate"].min().date()
 max_date = df_clean["InvoiceDate"].max().date()
 date_range = st.sidebar.date_input(
-    "Date Range", value=(min_date, max_date),
+    "📅 Date Range", value=(min_date, max_date),
     min_value=min_date, max_value=max_date
 )
+
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Dataset spans **{min_date}** → **{max_date}**")
+st.sidebar.caption(f"{len(countries)} countries in view")
 
 # Filters apply karna
 mask = df_clean["Country"].isin(selected_countries)
@@ -79,8 +211,11 @@ filtered = df_clean[mask]
 # ---------------------------------------------------------
 # Title
 # ---------------------------------------------------------
-st.title("Ecommerce Sales Dashboard")
-st.markdown("Interactive view of revenue, products, customers aur trends.")
+st.markdown('<div class="dash-title">🛒 Ecommerce Sales Dashboard</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="dash-subtitle">Interactive view of revenue, products, customers and trends.</div>',
+    unsafe_allow_html=True
+)
 
 # ---------------------------------------------------------
 # KPI Cards (top metrics row)
@@ -90,66 +225,110 @@ total_orders = filtered["InvoiceNo"].nunique()
 total_customers = filtered["CustomerID"].nunique()
 avg_order_value = filtered.groupby("InvoiceNo")["TotalPrice"].sum().mean()
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Revenue", f"£{total_revenue:,.0f}")
-col2.metric("Total Orders", f"{total_orders:,}")
-col3.metric("Total Customers", f"{total_customers:,}")
-col4.metric("Avg Order Value", f"£{avg_order_value:,.2f}")
+kpis = [
+    ("💰", "Total Revenue", f"£{total_revenue:,.0f}"),
+    ("📦", "Total Orders", f"{total_orders:,}"),
+    ("👥", "Total Customers", f"{total_customers:,}"),
+    ("🧾", "Avg Order Value", f"£{avg_order_value:,.2f}"),
+]
 
-st.markdown("---")
+cols = st.columns(4)
+for col, (icon, label, value) in zip(cols, kpis):
+    with col:
+        st.markdown(f"""
+        <div class="kpi-card">
+            <div class="kpi-icon">{icon}</div>
+            <div class="kpi-label">{label}</div>
+            <div class="kpi-value">{value}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+
+def styled_fig(figsize=(6, 4)):
+    """Create a matplotlib fig/ax pair matching the dark theme."""
+    fig, ax = plt.subplots(figsize=figsize)
+    for spine in ["top", "right"]:
+        ax.spines[spine].set_visible(False)
+    return fig, ax
+
+
+def render_chart(container, title, plot_fn):
+    with container:
+        st.markdown(f'<div class="section-header">{title}</div>', unsafe_allow_html=True)
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        plot_fn()
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
 # ---------------------------------------------------------
 # Row 1: Monthly Trend + Top Countries
 # ---------------------------------------------------------
 row1_col1, row1_col2 = st.columns(2)
 
-with row1_col1:
-    st.subheader("Monthly Revenue Trend")
+
+def plot_monthly_trend():
     monthly_sales = filtered.groupby("YearMonth")["TotalPrice"].sum()
-    fig, ax = plt.subplots(figsize=(6, 4))
-    monthly_sales.plot(kind="line", marker="o", color="royalblue", ax=ax)
+    fig, ax = styled_fig()
+    ax.plot(monthly_sales.index, monthly_sales.values, marker="o",
+            color=PRIMARY, linewidth=2.2, markersize=5,
+            markerfacecolor=ACCENT, markeredgecolor="none")
+    ax.fill_between(range(len(monthly_sales)), monthly_sales.values, alpha=0.08, color=PRIMARY)
     ax.set_xlabel("Year-Month")
     ax.set_ylabel("Revenue (£)")
     plt.xticks(rotation=45)
-    st.pyplot(fig)
+    st.pyplot(fig, transparent=True)
 
-with row1_col2:
-    st.subheader("Top 10 Countries by Revenue")
+
+def plot_top_countries():
     country_revenue = (
         filtered.groupby("Country")["TotalPrice"].sum()
         .sort_values(ascending=False).head(10)
     )
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = styled_fig()
     sns.barplot(x=country_revenue.values, y=country_revenue.index,
-                hue=country_revenue.index, palette="crest", legend=False, ax=ax)
+                hue=country_revenue.index, palette=PALETTE, legend=False, ax=ax)
     ax.set_xlabel("Revenue (£)")
-    st.pyplot(fig)
+    ax.set_ylabel("")
+    st.pyplot(fig, transparent=True)
+
+
+render_chart(row1_col1, "📈 Monthly Revenue Trend", plot_monthly_trend)
+render_chart(row1_col2, "🌍 Top 10 Countries by Revenue", plot_top_countries)
 
 # ---------------------------------------------------------
 # Row 2: Top Products + Order Value Distribution
 # ---------------------------------------------------------
 row2_col1, row2_col2 = st.columns(2)
 
-with row2_col1:
-    st.subheader("Top 10 Products by Revenue")
+
+def plot_top_products():
     top_products = (
         filtered.groupby("Description")["TotalPrice"].sum()
         .sort_values(ascending=False).head(10)
     )
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = styled_fig()
     sns.barplot(x=top_products.values, y=top_products.index,
-                hue=top_products.index, palette="viridis", legend=False, ax=ax)
+                hue=top_products.index, palette=PALETTE, legend=False, ax=ax)
     ax.set_xlabel("Revenue (£)")
-    st.pyplot(fig)
+    ax.set_ylabel("")
+    st.pyplot(fig, transparent=True)
 
-with row2_col2:
-    st.subheader("📊 Order Value Distribution")
+
+def plot_order_distribution():
     order_values = filtered.groupby("InvoiceNo")["TotalPrice"].sum().values
-    fig, ax = plt.subplots(figsize=(6, 4))
-    sns.histplot(order_values, bins=50, kde=True, color="teal", ax=ax)
+    fig, ax = styled_fig()
+    sns.histplot(order_values, bins=50, kde=True, color=ACCENT, ax=ax,
+                 edgecolor="none", alpha=0.7)
     ax.set_xlim(0, 1000)
     ax.set_xlabel("Order Value (£)")
-    st.pyplot(fig)
+    ax.set_ylabel("Count")
+    st.pyplot(fig, transparent=True)
+
+
+render_chart(row2_col1, "🏆 Top 10 Products by Revenue", plot_top_products)
+render_chart(row2_col2, "📊 Order Value Distribution", plot_order_distribution)
 
 # ---------------------------------------------------------
 # Row 3: Sales by Day of Week + Hour
@@ -159,30 +338,37 @@ row3_col1, row3_col2 = st.columns(2)
 day_order = ["Monday", "Tuesday", "Wednesday", "Thursday",
              "Friday", "Saturday", "Sunday"]
 
-with row3_col1:
-    st.subheader("📅 Revenue by Day of Week")
-    sales_by_day = filtered.groupby("DayOfWeek")["TotalPrice"].sum().reindex(day_order)
-    fig, ax = plt.subplots(figsize=(6, 4))
-    sns.barplot(x=sales_by_day.index, y=sales_by_day.values,
-                hue=sales_by_day.index, palette="coolwarm", legend=False, ax=ax)
-    plt.xticks(rotation=45)
-    ax.set_ylabel("Revenue (£)")
-    st.pyplot(fig)
 
-with row3_col2:
-    st.subheader("🕒 Revenue by Hour of Day")
+def plot_sales_by_day():
+    sales_by_day = filtered.groupby("DayOfWeek")["TotalPrice"].sum().reindex(day_order)
+    fig, ax = styled_fig()
+    sns.barplot(x=sales_by_day.index, y=sales_by_day.values,
+                hue=sales_by_day.index, palette=PALETTE, legend=False, ax=ax)
+    plt.xticks(rotation=45)
+    ax.set_xlabel("")
+    ax.set_ylabel("Revenue (£)")
+    st.pyplot(fig, transparent=True)
+
+
+def plot_sales_by_hour():
     sales_by_hour = filtered.groupby("Hour")["TotalPrice"].sum()
-    fig, ax = plt.subplots(figsize=(6, 4))
-    sns.lineplot(x=sales_by_hour.index, y=sales_by_hour.values,
-                 marker="o", color="darkorange", ax=ax)
+    fig, ax = styled_fig()
+    ax.plot(sales_by_hour.index, sales_by_hour.values, marker="o",
+            color=WARN, linewidth=2.2, markersize=5,
+            markerfacecolor=PRIMARY, markeredgecolor="none")
+    ax.fill_between(sales_by_hour.index, sales_by_hour.values, alpha=0.08, color=WARN)
     ax.set_xlabel("Hour")
     ax.set_ylabel("Revenue (£)")
-    st.pyplot(fig)
+    st.pyplot(fig, transparent=True)
+
+
+render_chart(row3_col1, "📅 Revenue by Day of Week", plot_sales_by_day)
+render_chart(row3_col2, "🕒 Revenue by Hour of Day", plot_sales_by_hour)
 
 # ---------------------------------------------------------
 # Row 4: Top Customers Table
 # ---------------------------------------------------------
-st.subheader("👤 Top 10 Customers by Spend")
+st.markdown('<div class="section-header">👤 Top 10 Customers by Spend</div>', unsafe_allow_html=True)
 customer_summary = filtered.groupby("CustomerID").agg(
     TotalSpent=("TotalPrice", "sum"),
     NumOrders=("InvoiceNo", "nunique"),
@@ -190,10 +376,21 @@ customer_summary = filtered.groupby("CustomerID").agg(
     LastPurchase=("InvoiceDate", "max")
 ).sort_values("TotalSpent", ascending=False).head(10)
 
-st.dataframe(customer_summary, use_container_width=True)
+st.dataframe(
+    customer_summary.style
+        .format({"TotalSpent": "£{:,.2f}", "AvgOrderValue": "£{:,.2f}"})
+        .background_gradient(subset=["TotalSpent"], cmap="Purples"),
+    use_container_width=True
+)
 
 # ---------------------------------------------------------
 # Raw Data (optional expandable section)
 # ---------------------------------------------------------
-with st.expander("Raw Filtered Data Insight"):
+with st.expander("🔍 Raw Filtered Data Insight"):
     st.dataframe(filtered.head(500), use_container_width=True)
+
+st.markdown(
+    f'<p style="text-align:center; color:{TEXT_MUTED}; margin-top:2rem; font-size:0.8rem;">'
+    'Built with Streamlit · Ecommerce Sales Dashboard</p>',
+    unsafe_allow_html=True
+)
