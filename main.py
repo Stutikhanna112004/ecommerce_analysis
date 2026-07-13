@@ -18,7 +18,7 @@ sns.set_style("whitegrid")
 # ---------------------------------------------------------
 # Data Load + Clean (Load Dataset)
 # ---------------------------------------------------------
-DATA_PATH = "C:/Users/stuti/Downloads/ds learning/data.csv"   
+DATA_PATH = (r"C:\Users\stuti\Downloads\ds learning\data.csv", encoding="latin1")
 
 
 @st.cache_data
